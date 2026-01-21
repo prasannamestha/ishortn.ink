@@ -54,6 +54,8 @@ services:
       # Analytics (optional)
       - UMAMI_TRACKING_ID=${UMAMI_TRACKING_ID}
       - UMAMI_URL=${UMAMI_URL}
+      # OpenAI (for AI alias suggestions and phishing detection)
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
     depends_on:
       database:
         condition: service_healthy
