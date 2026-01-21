@@ -2,6 +2,8 @@ import { openai } from "@ai-sdk/openai";
 import { generateObject } from "ai";
 import { z } from "zod";
 
+const OPENAI_ENABLED = !!process.env.OPENAI_API_KEY;
+
 export async function generateAliasFromMetadata(metadata: {
   title?: string;
   description?: string;

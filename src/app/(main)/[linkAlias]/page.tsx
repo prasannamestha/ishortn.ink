@@ -1,7 +1,7 @@
 import { headers } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 
-import { socialMediaAgents } from "@/lib/constants/app";
+import { DEFAULT_DOMAIN, socialMediaAgents } from "@/lib/constants/app";
 import { api } from "@/trpc/server";
 
 import { LinkPasswordVerification } from "./link-password-verification";
@@ -20,8 +20,6 @@ export type LinkMetadata = {
   description: string;
   image: string;
 };
-
-const DEFAULT_DOMAIN = "ishortn.ink";
 
 const cleanUrl = (url: string) => url.replace(/^(https?:\/\/)?(www\.)?/, "");
 
