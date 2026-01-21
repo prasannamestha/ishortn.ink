@@ -20,7 +20,13 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# Skip env validation during build (env vars provided at runtime)
+# Build arguments for public environment variables (embedded at build time)
+ARG NEXT_PUBLIC_APP_URL
+ARG NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
+ENV NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL}
+ENV NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=${NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}
+
+# Skip env validation during build (server env vars provided at runtime)
 ENV SKIP_ENV_VALIDATION=1
 ENV NEXT_TELEMETRY_DISABLED=1
 

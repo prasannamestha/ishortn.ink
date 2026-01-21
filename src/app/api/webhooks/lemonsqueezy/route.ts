@@ -13,7 +13,9 @@ import type {
   LemonsqueezyWebhookPayload,
 } from "@/lib/types/lemonsqueezy";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+function getResend() {
+  return process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
+}
 
 export async function POST(request: Request) {
   if (!process.env.LEMONSQUEEZY_WEBHOOK_SECRET) {
@@ -113,12 +115,15 @@ async function processWebhook(webhookEvent: LemonsqueezyWebhookPayload) {
       return;
     }
 
-    await resend.emails.send({
-      from: "Kelvin from iShortn <kelvin@ishortn.ink>",
-      to: email,
-      subject: `Welcome to iShortn ${emailPlan === "ultra" ? "Ultra" : "Pro"}`,
-      react: WelcomeEmail({ userName: name ?? "there", plan: emailPlan }),
-    });
+    const resend = getResend();
+    if (resend) {
+      await resend.emails.send({
+        from: "Kelvin from iShortn <kelvin@ishortn.ink>",
+        to: email,
+        subject: `Welcome to iShortn ${emailPlan === "ultra" ? "Ultra" : "Pro"}`,
+        react: WelcomeEmail({ userName: name ?? "there", plan: emailPlan }),
+      });
+    }
   } else if (event_name === "subscription_updated") {
     // handle subscription updated. Sent when a subscription is updated
 

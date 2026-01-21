@@ -53,10 +53,28 @@ const linkSchema = z.object({
     .default("false"),
 });
 
-export const redis = new Redis(env.REDIS_URL, {
-  retryStrategy: (times: number) => Math.min(times * 50, 2000),
-  enableOfflineQueue: true,
-  maxRetriesPerRequest: 3,
+let _redis: Redis | null = null;
+
+function getRedis(): Redis {
+  if (!_redis) {
+    _redis = new Redis(env.REDIS_URL!, {
+      retryStrategy: (times: number) => Math.min(times * 50, 2000),
+      enableOfflineQueue: true,
+      maxRetriesPerRequest: 3,
+    });
+  }
+  return _redis;
+}
+
+export const redis = new Proxy({} as Redis, {
+  get(_, prop) {
+    const instance = getRedis();
+    const value = instance[prop as keyof Redis];
+    if (typeof value === "function") {
+      return value.bind(instance);
+    }
+    return value;
+  },
 });
 
 const DEFAULT_CACHE_TTL = 60 * 60 * 24;

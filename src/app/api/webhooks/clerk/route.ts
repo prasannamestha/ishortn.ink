@@ -8,7 +8,9 @@ import WelcomeEmail from "@/lib/email/templates/welcome-email";
 import { db } from "@/server/db";
 import { user } from "@/server/db/schema";
 
-const resend = new Resend(env.RESEND_API_KEY);
+function getResend() {
+  return env.RESEND_API_KEY ? new Resend(env.RESEND_API_KEY) : null;
+}
 
 export async function POST(req: Request) {
   // You can find this in the Clerk Dashboard -> Webhooks -> choose the webhook
@@ -72,17 +74,20 @@ export async function POST(req: Request) {
     imageUrl: userInfo.avatarUrl,
   });
 
-  const { error } = await resend.emails.send({
-    from: "Kelvin <developer@ishortn.ink>",
-    to: userInfo.email!,
-    subject: "Welcome to iShortn",
-    react: WelcomeEmail({
-      userFirstname: userInfo.name.split(" ")[0] ?? "there",
-    }),
-  });
+  const resend = getResend();
+  if (resend) {
+    const { error } = await resend.emails.send({
+      from: "Kelvin <developer@ishortn.ink>",
+      to: userInfo.email!,
+      subject: "Welcome to iShortn",
+      react: WelcomeEmail({
+        userFirstname: userInfo.name.split(" ")[0] ?? "there",
+      }),
+    });
 
-  if (error) {
-    console.error("Error sending email:", error);
+    if (error) {
+      console.error("Error sending email:", error);
+    }
   }
 
   return new Response("", { status: 201 });

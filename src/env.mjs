@@ -13,14 +13,15 @@ export const env = createEnv({
       .refine(
         (str) => !str.includes("YOUR_DATABASE_URL_HERE"),
         "You forgot to change the default URL"
-      ),
+      )
+      .optional(),
     GEOLOCATION_API_KEY: z.string().optional(),
     NODE_ENV: z
       .enum(["development", "test", "production"])
       .default("development"),
     RESEND_API_KEY: z.string().optional(),
     WEBHOOK_SECRET: z.string().optional(),
-    REDIS_URL: z.string().url(),
+    REDIS_URL: z.string().url().optional(),
     UMAMI_TRACKING_ID: z.string().optional(),
     UMAMI_URL: z.string().url().optional(),
     DISCORD_WEBHOOK_URL: z.string().url().optional(),
