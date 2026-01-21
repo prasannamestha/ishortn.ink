@@ -1,0 +1,25 @@
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Install bun for faster installs
+RUN npm install -g bun
+
+# Copy package files
+COPY package.json bun.lockb* ./
+
+# Install ALL dependencies (including devDependencies for drizzle-kit)
+RUN bun install --frozen-lockfile
+
+# Copy source code needed for migrations
+COPY drizzle.config.ts ./
+COPY src/server/db ./src/server/db
+COPY src/env.mjs ./src/env.mjs
+COPY src/lib/constants ./src/lib/constants
+COPY tsconfig.json ./
+
+# Skip env validation during migration
+ENV SKIP_ENV_VALIDATION=1
+
+# Run migrations (auto-accept prompts)
+CMD ["npx", "drizzle-kit", "push", "--force"]

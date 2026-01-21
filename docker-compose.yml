@@ -3,6 +3,20 @@ version: "3.8"
 name: ishortn
 
 services:
+  migrate:
+    build:
+      context: .
+      dockerfile: Dockerfile.migrate
+    container_name: ishortn_migrate
+    environment:
+      - DATABASE_URL=mysql://ishortn:${DB_PASSWORD}@database:3306/ishortn
+    depends_on:
+      database:
+        condition: service_healthy
+    networks:
+      - ishortn_network
+    restart: "no"
+
   app:
     build:
       context: .
@@ -45,6 +59,8 @@ services:
         condition: service_healthy
       cache:
         condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
     networks:
       - ishortn_network
 
