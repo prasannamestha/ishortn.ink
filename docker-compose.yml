@@ -57,8 +57,9 @@ services:
       - MYSQL_DATABASE=ishortn
       - MYSQL_USER=ishortn
       - MYSQL_PASSWORD=${DB_PASSWORD}
-    ports:
-      - "3306:3306"
+    # Uncomment to expose MySQL externally (not recommended for production)
+    # ports:
+    #   - "3306:3306"
     volumes:
       - ishortn_db_data:/var/lib/mysql
     healthcheck:
@@ -74,8 +75,9 @@ services:
     image: redis:7-alpine
     container_name: ishortn_cache
     restart: unless-stopped
-    ports:
-      - "6379:6379"
+    # Uncomment to expose Redis externally (not recommended for production)
+    # ports:
+    #   - "6379:6379"
     volumes:
       - ishortn_cache_data:/data
     healthcheck:
