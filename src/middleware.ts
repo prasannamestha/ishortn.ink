@@ -47,9 +47,14 @@ async function resolveLinkAndLogAnalytics(request: NextRequest) {
   // Derive continent from country code (geo.region is Vercel deployment region, not continent)
   const continent = country ? getCountryContinentCode(country) : (isLocalhost ? "NA" : undefined);
 
+  // Use internal URL for Docker/self-hosted environments (SSL terminated at reverse proxy)
+  const internalOrigin = process.env.NODE_ENV === "production"
+    ? "http://localhost:3000"
+    : origin;
+
   const response = await fetch(
     encodeURI(
-      `${origin}/api/link?domain=${host}&alias=${pathname}&country=${country}&city=${city}&continent=${continent}&ip=${ip}`,
+      `${internalOrigin}/api/link?domain=${host}&alias=${pathname}&country=${country}&city=${city}&continent=${continent}&ip=${ip}`,
     ),
     {
       headers: {
