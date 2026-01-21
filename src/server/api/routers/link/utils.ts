@@ -4,6 +4,7 @@ import crypto from "node:crypto";
 
 import { retrieveDeviceAndGeolocationData } from "@/lib/core/analytics";
 import { redis } from "@/lib/core/cache";
+import { DEFAULT_DOMAIN } from "@/lib/constants/app";
 import { normalizeAlias, parseReferrer } from "@/lib/utils";
 import { isBot } from "@/lib/utils/is-bot";
 import { link, linkVisit, siteSettings, team, uniqueLinkVisit, user } from "@/server/db/schema";
@@ -164,7 +165,7 @@ export async function getUserDefaultDomain(ctx: ProtectedTRPCContext): Promise<s
   const cachedDomain = await redis.get(cacheKey);
 
   if (cachedDomain) {
-    return cachedDomain ?? "ishortn.ink";
+    return cachedDomain ?? DEFAULT_DOMAIN;
   }
 
   const userInfo = await ctx.db.query.user.findFirst({
@@ -174,7 +175,7 @@ export async function getUserDefaultDomain(ctx: ProtectedTRPCContext): Promise<s
     },
   });
 
-  const defaultDomain = userInfo?.siteSettings?.defaultDomain ?? "ishortn.ink";
+  const defaultDomain = userInfo?.siteSettings?.defaultDomain ?? DEFAULT_DOMAIN;
   await redis.set(cacheKey, defaultDomain, "EX", 300); // 5 minutes
 
   return defaultDomain;
@@ -199,7 +200,7 @@ export async function getWorkspaceDefaultDomain(ctx: WorkspaceTRPCContext): Prom
       where: eq(team.id, ctx.workspace.teamId),
     });
 
-    const defaultDomain = teamRecord?.defaultDomain ?? "ishortn.ink";
+    const defaultDomain = teamRecord?.defaultDomain ?? DEFAULT_DOMAIN;
     await redis.set(cacheKey, defaultDomain, "EX", 300); // 5 minutes
 
     return defaultDomain;

@@ -17,6 +17,7 @@ import {
 } from "drizzle-orm";
 
 import { canUseGeoRules, getGeoRulesLimit, isUnlimitedGeoRules, resolvePlan } from "@/lib/billing/plans";
+import { DEFAULT_DOMAIN } from "@/lib/constants/app";
 import { retrieveDeviceAndGeolocationData } from "@/lib/core/analytics";
 import { deleteFromCache, deleteGeoRulesFromCache, getFromCache, setInCache } from "@/lib/core/cache";
 import { generateShortLink } from "@/lib/core/links";
@@ -278,7 +279,7 @@ export const createLink = async (ctx: WorkspaceTRPCContext, input: CreateLinkInp
   const { plan, currentCount, limit } = await checkWorkspaceLinkLimit(ctx);
   const isPaidPlan = plan !== "free";
 
-  const domain = input.domain ?? "ishortn.ink";
+  const domain = input.domain ?? DEFAULT_DOMAIN;
   const alias = input.alias && input.alias !== "" ? input.alias : await generateShortLink();
 
   const fetchedMetadata = await fetchMetadataInfo(input.url);
@@ -1336,7 +1337,7 @@ export const bulkCreateLinks = async (ctx: WorkspaceTRPCContext, csvContent: str
         userId: ownership.userId,
         teamId: ownership.teamId,
         createdByUserId: ctx.auth.userId, // Track the actual user who created the link
-        domain: record.domain ?? "ishortn.ink",
+        domain: record.domain ?? DEFAULT_DOMAIN,
         note: record.note,
       });
     }),

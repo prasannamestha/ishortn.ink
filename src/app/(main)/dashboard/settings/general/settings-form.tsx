@@ -34,6 +34,7 @@ import {
 import { api } from "@/trpc/react";
 
 import type { RouterOutputs } from "@/trpc/shared";
+import { DEFAULT_DOMAIN } from "@/lib/constants/app";
 
 const formSchema = z.object({
   defaultDomain: z.string(),
@@ -74,7 +75,7 @@ export function SettingsForm({
   }
 
   const activeDomains = [
-    { domain: "ishortn.ink", status: "active" as const },
+    { domain: DEFAULT_DOMAIN, status: "active" as const },
     ...availableDomains.filter((d) => d.status === "active"),
   ];
 

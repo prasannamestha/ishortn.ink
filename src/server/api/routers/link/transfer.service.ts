@@ -2,6 +2,7 @@ import { TRPCError } from "@trpc/server";
 import { and, eq, inArray, isNull, sql } from "drizzle-orm";
 
 import { getPlanCaps } from "@/lib/billing/plans";
+import { DEFAULT_DOMAIN } from "@/lib/constants/app";
 import {
   customDomain,
   link,
@@ -319,7 +320,7 @@ export async function validateTransfer(
 
   // Check custom domain availability in target workspace
   const customDomains = [
-    ...new Set(sourceLinks.filter((l) => l.domain !== "ishortn.ink").map((l) => l.domain)),
+    ...new Set(sourceLinks.filter((l) => l.domain !== DEFAULT_DOMAIN).map((l) => l.domain)),
   ];
 
   if (customDomains.length > 0) {

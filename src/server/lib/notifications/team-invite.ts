@@ -1,6 +1,7 @@
 import { Resend } from "resend";
 
 import { env } from "@/env.mjs";
+import { DEFAULT_DOMAIN } from "@/lib/constants/app";
 import TeamInviteEmail from "@/emails/team-invite";
 
 type SendTeamInviteEmailInput = {
@@ -26,7 +27,7 @@ export async function sendTeamInviteEmail({
 }: SendTeamInviteEmailInput) {
   if (!resend) return;
 
-  const baseDomain = process.env.NEXT_PUBLIC_APP_DOMAIN || "ishortn.ink";
+  const baseDomain = process.env.NEXT_PUBLIC_APP_DOMAIN || DEFAULT_DOMAIN;
   const inviteUrl = `https://${baseDomain}/teams/accept-invite?token=${encodeURIComponent(token)}`;
 
   try {

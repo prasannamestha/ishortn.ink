@@ -4,6 +4,7 @@ import { and, eq, isNull } from "drizzle-orm";
 import crypto from "node:crypto";
 
 import { redis } from "@/lib/core/cache";
+import { DEFAULT_DOMAIN } from "@/lib/constants/app";
 import { customDomain, RESERVED_TEAM_SLUGS, team, teamInvite, teamMember, user } from "@/server/db/schema";
 import { sendTeamInviteEmail } from "@/server/lib/notifications/team-invite";
 import {
@@ -100,7 +101,7 @@ export async function updateTeam(ctx: TeamTRPCContext, input: UpdateTeamInput) {
   requirePermission(ctx.workspace, "team.settings", "update team settings");
 
   // Validate default domain if provided and not the default
-  if (input.defaultDomain && input.defaultDomain !== "ishortn.ink") {
+  if (input.defaultDomain && input.defaultDomain !== DEFAULT_DOMAIN) {
     const validDomain = await ctx.db.query.customDomain.findFirst({
       where: and(
         eq(customDomain.domain, input.defaultDomain),
@@ -565,7 +566,7 @@ export async function createInvite(
     });
   }
 
-  const baseDomain = process.env.NEXT_PUBLIC_APP_DOMAIN || "ishortn.ink";
+  const baseDomain = process.env.NEXT_PUBLIC_APP_DOMAIN || DEFAULT_DOMAIN;
 
   return {
     inviteId: Number(result.insertId),

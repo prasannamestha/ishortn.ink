@@ -1,6 +1,7 @@
 import { eq } from "drizzle-orm";
 
 import { redis } from "@/lib/core/cache";
+import { DEFAULT_DOMAIN } from "@/lib/constants/app";
 import { siteSettings } from "@/server/db/schema";
 
 import type { ProtectedTRPCContext } from "../../trpc";
@@ -15,7 +16,7 @@ export async function getSiteSettings(ctx: ProtectedTRPCContext) {
   if (!settings) {
     const [newSettings] = await ctx.db.insert(siteSettings).values({
       userId: ctx.auth.userId,
-      defaultDomain: "ishortn.ink",
+      defaultDomain: DEFAULT_DOMAIN,
     });
 
     return ctx.db.query.siteSettings.findFirst({
@@ -35,7 +36,7 @@ export async function updateSiteSettings(
   });
 
   // If domain is not ishortn.ink, verify that the user owns the domain
-  if (input.defaultDomain !== "ishortn.ink") {
+  if (input.defaultDomain !== DEFAULT_DOMAIN) {
     const domain = await ctx.db.query.customDomain.findFirst({
       where: (table, { and }) =>
         and(
