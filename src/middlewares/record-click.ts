@@ -1,5 +1,4 @@
 import crypto from "node:crypto";
-import { waitUntil } from "@vercel/functions";
 import { sql } from "drizzle-orm";
 import { UAParser } from "ua-parser-js";
 
@@ -12,16 +11,27 @@ import { linkVisit, uniqueLinkVisit } from "@/server/db/schema";
 import { registerEventUsage } from "@/server/lib/event-usage";
 import { sendEventUsageEmail } from "@/server/lib/notifications/event-usage";
 
-// Check if running on localhost (waitUntil doesn't work locally)
-const isLocalhost = process.env.NODE_ENV === "development";
+// Check if running on Vercel (waitUntil only works on Vercel)
+const isVercel = !!process.env.VERCEL;
 
-// Helper to run background tasks - awaits on localhost, uses waitUntil in production
+// Dynamically import waitUntil only on Vercel
+let waitUntil: ((promise: Promise<unknown>) => void) | undefined;
+if (isVercel) {
+  import("@vercel/functions").then((mod) => {
+    waitUntil = mod.waitUntil;
+  }).catch(() => {
+    // Not on Vercel, ignore
+  });
+}
+
+// Helper to run background tasks - awaits in self-hosted/Docker, uses waitUntil on Vercel
 async function runBackgroundTask<T>(promise: Promise<T>): Promise<T | undefined> {
-  if (isLocalhost) {
-    return promise;
+  if (isVercel && waitUntil) {
+    waitUntil(promise);
+    return undefined;
   }
-  waitUntil(promise);
-  return undefined;
+  // In self-hosted environments, just await the promise
+  return promise;
 }
 
 /**
@@ -104,12 +114,12 @@ async function recordClick(
     return;
   }
 
-  // On localhost, geolocation returns undefined - use dummy values
+  // On localhost/Docker, geolocation may return undefined - use dummy values
   let countryName: string;
   let continentName: string;
   let cityName: string;
 
-  if (isLocalhost || !country || country === "undefined") {
+  if (!country || country === "undefined") {
     // Use realistic dummy data for localhost
     countryName = "United States";
     continentName = "North America";
