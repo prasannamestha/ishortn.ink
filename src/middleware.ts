@@ -1,11 +1,59 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
-import { geolocation, ipAddress } from "@vercel/functions";
 import { type NextRequest, NextResponse } from "next/server";
 
 import { getCountryContinentCode } from "@/lib/countries";
 import { isBot } from "@/lib/utils/is-bot";
 
 const isProtectedRoute = createRouteMatcher(["/dashboard(.*)"]);
+
+/**
+ * Extract IP address from request headers.
+ * Works with reverse proxies like Traefik, nginx, Cloudflare, etc.
+ */
+function getIpAddress(request: NextRequest): string | undefined {
+  // Try various headers that reverse proxies set
+  const forwardedFor = request.headers.get("x-forwarded-for");
+  if (forwardedFor) {
+    // x-forwarded-for can contain multiple IPs, first one is the client
+    return forwardedFor.split(",")[0]?.trim();
+  }
+
+  const realIp = request.headers.get("x-real-ip");
+  if (realIp) {
+    return realIp;
+  }
+
+  // Cloudflare
+  const cfConnectingIp = request.headers.get("cf-connecting-ip");
+  if (cfConnectingIp) {
+    return cfConnectingIp;
+  }
+
+  return undefined;
+}
+
+/**
+ * Extract geolocation from request headers.
+ * Works with Cloudflare, AWS CloudFront, or custom geo headers from reverse proxy.
+ */
+function getGeolocation(request: NextRequest): { country?: string; city?: string } {
+  // Cloudflare headers
+  const cfCountry = request.headers.get("cf-ipcountry");
+  const cfCity = request.headers.get("cf-ipcity");
+
+  // AWS CloudFront headers
+  const awsCountry = request.headers.get("cloudfront-viewer-country");
+  const awsCity = request.headers.get("cloudfront-viewer-city");
+
+  // Generic geo headers (can be set by nginx with GeoIP module, etc.)
+  const geoCountry = request.headers.get("x-geo-country");
+  const geoCity = request.headers.get("x-geo-city");
+
+  return {
+    country: cfCountry || awsCountry || geoCountry || undefined,
+    city: cfCity || awsCity || geoCity || undefined,
+  };
+}
 
 async function resolveLinkAndLogAnalytics(request: NextRequest) {
   if (isProtectedRoute(request)) {
@@ -35,17 +83,17 @@ async function resolveLinkAndLogAnalytics(request: NextRequest) {
     return NextResponse.next();
   }
 
-  const geo = geolocation(request);
-  const ip = ipAddress(request);
+  const geo = getGeolocation(request);
+  const ip = getIpAddress(request);
   const referer = request.headers.get("referer");
 
   // In localhost/development, use simulated geo data or allow override via query param
   const isLocalhost = host.includes("localhost") || host.includes("127.0.0.1");
   const simCountry = request.nextUrl.searchParams.get("geo"); // Allow ?geo=US for testing
-  const country = simCountry || geo.country || (isLocalhost ? "US" : undefined);
-  const city = geo.city || (isLocalhost ? "San Francisco" : undefined);
-  // Derive continent from country code (geo.region is Vercel deployment region, not continent)
-  const continent = country ? getCountryContinentCode(country) : (isLocalhost ? "NA" : undefined);
+  const country = simCountry || geo.country || (isLocalhost ? "US" : "Unknown");
+  const city = geo.city || (isLocalhost ? "San Francisco" : "Unknown");
+  // Derive continent from country code
+  const continent = country && country !== "Unknown" ? getCountryContinentCode(country) : (isLocalhost ? "NA" : "Unknown");
 
   // Use internal URL for Docker/self-hosted environments (SSL terminated at reverse proxy)
   const internalOrigin = process.env.NODE_ENV === "production"

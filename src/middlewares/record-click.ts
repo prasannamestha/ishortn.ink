@@ -11,29 +11,6 @@ import { linkVisit, uniqueLinkVisit } from "@/server/db/schema";
 import { registerEventUsage } from "@/server/lib/event-usage";
 import { sendEventUsageEmail } from "@/server/lib/notifications/event-usage";
 
-// Check if running on Vercel (waitUntil only works on Vercel)
-const isVercel = !!process.env.VERCEL;
-
-// Dynamically import waitUntil only on Vercel
-let waitUntil: ((promise: Promise<unknown>) => void) | undefined;
-if (isVercel) {
-  import("@vercel/functions").then((mod) => {
-    waitUntil = mod.waitUntil;
-  }).catch(() => {
-    // Not on Vercel, ignore
-  });
-}
-
-// Helper to run background tasks - awaits in self-hosted/Docker, uses waitUntil on Vercel
-async function runBackgroundTask<T>(promise: Promise<T>): Promise<T | undefined> {
-  if (isVercel && waitUntil) {
-    waitUntil(promise);
-    return undefined;
-  }
-  // In self-hosted environments, just await the promise
-  return promise;
-}
-
 /**
  * This function records a unique click for a link.
  * It checks if there exists a unique click for this ip and link id.
@@ -98,16 +75,15 @@ async function recordClick(
   const usage = await registerEventUsage(link.userId, db);
 
   if (usage.alertLevelTriggered && usage.limit && usage.userEmail && usage.plan) {
-    await runBackgroundTask(
-      sendEventUsageEmail({
-        email: usage.userEmail,
-        name: usage.userName,
-        threshold: usage.alertLevelTriggered,
-        limit: usage.limit,
-        currentCount: usage.currentCount,
-        plan: usage.plan,
-      }),
-    );
+    // Send email notification (fire and forget - don't block the response)
+    sendEventUsageEmail({
+      email: usage.userEmail,
+      name: usage.userName,
+      threshold: usage.alertLevelTriggered,
+      limit: usage.limit,
+      currentCount: usage.currentCount,
+      plan: usage.plan,
+    }).catch((err) => console.error("Failed to send event usage email:", err));
   }
 
   if (!usage.allowed) {
@@ -184,23 +160,10 @@ export async function recordUserClickForLink(
     return null;
   }
 
-  // await setInCache(cacheKey, link);
-
-  // await recordClick(
-  //   req,
-  //   link,
-  //   req.referrer ?? "direct",
-  //   ip,
-  //   country,
-  //   city,
-  //   continent
-  // );
-
-  await runBackgroundTask(setInCache(cacheKey, link));
+  // Cache the link and record click
+  await setInCache(cacheKey, link);
   if (!skipAnalytics) {
-    await runBackgroundTask(
-      recordClick(req, link, req.referrer ?? "direct", ip, country, city, continent),
-    );
+    await recordClick(req, link, req.referrer ?? "direct", ip, country, city, continent);
   }
   return link;
 }
@@ -290,18 +253,16 @@ export async function recordUserClickWithGeoRule(
     return null;
   }
 
-  await runBackgroundTask(setInCache(cacheKey, link));
-  await runBackgroundTask(
-    recordClick(
-      req,
-      link,
-      req.referrer ?? "direct",
-      ip,
-      country,
-      city,
-      continent,
-      matchedGeoRuleId
-    )
+  await setInCache(cacheKey, link);
+  await recordClick(
+    req,
+    link,
+    req.referrer ?? "direct",
+    ip,
+    country,
+    city,
+    continent,
+    matchedGeoRuleId
   );
   return link;
 }
